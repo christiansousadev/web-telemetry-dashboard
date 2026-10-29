@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coletor de Dados Avançado - Localização, Câmera e Telemetria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 16px;
+            padding: 35px 30px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 520px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 1.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        h1 i {
+            color: #667eea;
+        }
+        
+        .description {
+            color: #718096;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .settings-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .settings-bar select {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e0;
+            background-color: white;
+            color: #2d3748;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        .collector-btn {
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
+        }
+        
+        .collector-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 9px 24px rgba(102, 126, 234, 0.6);
+        }
+        
+        .collector-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .status-box {
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 15px;
+            border-left: 5px solid #667eea;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+            border-left-width: 5px;
+        }
+        
+        .status-title {
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+        
+        .status-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-message {
+            color: #4a5568;
+            font-size: 0.88rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background-color: white;
+            border: 1px solid #edf2f7;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .status-message.success {
+            background-color: #f0fff4;
+            color: #22543d;
+            border-color: #c6f6d5;
+        }
+        
+        .status-message.error {
+            background-color: #fff5f5;
+            color: #742a2a;
+            border-color: #fed7d7;
+        }
+
+        .status-message.info {
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+            border-color: #bee3f8;
+        }
+        
+        .media-preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .preview-box {
+            background-color: #1a202c;
+            border-radius: 8px;
+            height: 140px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 0.8rem;
+            flex-direction: column;
+            border: 1px solid #2d3748;
+        }
+
+        .preview-label {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 2;
+        }
+        
+        #video, #photo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .telemetry-grid {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.82rem;
+        }
+
+        .telemetry-item {
+            background: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .telemetry-item strong {
+            display: block;
+            color: #718096;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .telemetry-item span {
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .note {
+            background-color: #fffaf0;
+            color: #9c4221;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            border-left: 4px solid #dd6b20;
+            text-align: left;
+            line-height: 1.4;
+        }
+        
+        footer {
+            margin-top: 20px;
+            color: #a0aec0;
+            font-size: 0.82rem;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-satellite-dish"></i> Coletor de Dados</h1>
+        
+        <p class="description">
+            Captura de localização GPS de alta precisão, foto via câmera e telemetria completa do dispositivo para auditoria e monitoramento em tempo real.
+        </p>
+
+        <div class="settings-bar">
+            <span><i class="fas fa-camera"></i> Câmera preferencial:</span>
+            <select id="camera-facing">
+                <option value="user" selected>Frontal (Selfie)</option>
+                <option value="environment">Traseira (Ambiente)</option>
+            </select>
+        </div>
+        
+        <button id="collect-btn" class="collector-btn">
+            <i class="fas fa-play-circle"></i> Iniciar Coleta Completa
+        </button>
+        
+        <div class="status-box">
+            <div class="status-title">
+                <span><i class="fas fa-terminal"></i> Status das Operações</span>
+                <span id="session-badge" style="font-family: monospace; font-size: 0.75rem; color: #718096;">Sessão: -</span>
+            </div>
+            
+            <div id="status-messages" class="status-messages">
+                <div class="status-message">
+                    <i class="fas fa-info-circle"></i> Pronto. Clique no botão acima para iniciar.
+                </div>
+            </div>
+            
+            <!-- Pré-visualização da Câmera e da Foto Real Capturada -->
+            <div id="media-container" class="media-preview-container hidden">
+                <div class="preview-box">
+                    <span class="preview-label"><i class="fas fa-video"></i> Ao Vivo</span>
+                    <video id="video" autoplay playsinline muted></video>
+                    <div id="camera-placeholder" style="text-align:center;">
+                        <i class="fas fa-camera" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p style="margin-top: 4px;">Vídeo</p>
+                    </div>
+                </div>
+
+                <div class="preview-box">
+                    <span class="preview-label"><i class="fas fa-image"></i> Foto Capturada</span>
+                    <img id="photo-preview" class="hidden" alt="Foto capturada">
+                    <div id="photo-placeholder" style="text-align:center;">
+                        <i class="fas fa-camera-retro" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p style="margin-top: 4px;">Aguardando captura</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados de Telemetria Coletados -->
+            <div id="telemetry-container" class="telemetry-grid hidden">
+                <div class="telemetry-item">
+                    <strong><i class="fas fa-map-marker-alt"></i> GPS (Lat, Long)</strong>
+                    <span id="tel-gps">Aguardando...</span>
+                </div>
+                <div class="telemetry-item">
+                    <strong><i class="fas fa-crosshairs"></i> Precisão GPS</strong>
+                    <span id="tel-acc">N/A</span>
+                </div>
+                <div class="telemetry-item">
+                    <strong><i class="fas fa-network-wired"></i> IP Público</strong>
+                    <span id="tel-ip">Detectando...</span>
+                </div>
+                <div class="telemetry-item">
+                    <strong><i class="fas fa-battery-half"></i> Bateria</strong>
+                    <span id="tel-battery">Detectando...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="note">
+            <i class="fas fa-shield-alt"></i> <strong>Aviso de Permissões:</strong> Seu navegador solicitará permissão para localização e câmera. Os dados capturados são sincronizados com o painel de monitoramento.
+        </div>
+        
+        <footer>
+            Para visualizar o mapa e histórico completo, acesse o <a href="painel.html" target="_blank">painel.html</a>.
+        </footer>
+    </div>
+
+    <!-- Canvas invisível para capturar snapshot da câmera em alta resolução -->
+    <canvas id="snapshot-canvas" style="display:none;"></canvas>
+
+    <script>
+        // Identificador único da sessão
+        const sessionId = 'session_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+        document.getElementById('session-badge').textContent = sessionId.substring(0, 16);
+
+        // Elementos do DOM
+        const collectBtn = document.getElementById('collect-btn');
+        const cameraFacingSelect = document.getElementById('camera-facing');
+        const statusMessages = document.getElementById('status-messages');
+        const mediaContainer = document.getElementById('media-container');
+        const telemetryContainer = document.getElementById('telemetry-container');
+        const video = document.getElementById('video');
+        const cameraPlaceholder = document.getElementById('camera-placeholder');
+        const photoPreview = document.getElementById('photo-preview');
+        const photoPlaceholder = document.getElementById('photo-placeholder');
+        const snapshotCanvas = document.getElementById('snapshot-canvas');
+
+        // Telemetria elements
+        const telGps = document.getElementById('tel-gps');
+        const telAcc = document.getElementById('tel-acc');
+        const telIp = document.getElementById('tel-ip');
+        const telBattery = document.getElementById('tel-battery');
+
+        // Utilitário para adicionar mensagens de status
+        function addStatus(message, type = 'info') {
+            const iconMap = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            const div = document.createElement('div');
+            div.className = `status-message ${type}`;
+            div.innerHTML = `<i class="fas ${iconMap[type] || 'fa-info-circle'}"></i> <span>${message}</span>`;
+            statusMessages.prepend(div);
+
+            // Mantém no máximo 5 mensagens recentes
+            if (statusMessages.children.length > 5) {
+                statusMessages.removeChild(statusMessages.lastChild);
+            }
+        }
+
+        // 1. Coleta de Geolocalização GPS de Alta Precisão
+        function collectGpsLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    addStatus('Geolocalização não suportada neste navegador', 'error');
+                    resolve(null);
+                    return;
+                }
+
+                addStatus('Acessando satélites / GPS de alta precisão...', 'info');
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const loc = {
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude,
+                            accuracy: pos.coords.accuracy,
+                            altitude: pos.coords.altitude,
+                            speed: pos.coords.speed,
+                            heading: pos.coords.heading,
+                            timestamp: new Date(pos.timestamp).toISOString()
+                        };
+
+                        telGps.textContent = `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
+                        telAcc.textContent = `± ${loc.accuracy.toFixed(1)} m`;
+                        addStatus(`Localização obtida com precisão de ${loc.accuracy.toFixed(1)}m`, 'success');
+                        resolve(loc);
+                    },
+                    (err) => {
+                        let errText = 'Erro ao obter GPS';
+                        if (err.code === err.PERMISSION_DENIED) errText = 'Permissão de localização negada pelo usuário';
+                        if (err.code === err.POSITION_UNAVAILABLE) errText = 'Sinal de localização indisponível';
+                        if (err.code === err.TIMEOUT) errText = 'Tempo limite esgotado ao buscar GPS';
+                        addStatus(errText, 'error');
+                        telGps.textContent = 'Não permitida';
+                        resolve(null);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 12000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // 2. Coleta de Câmera + Captura de Foto Real (Snapshot)
+        async function captureCameraSnapshot() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                addStatus('API de Câmera não suportada neste ambiente', 'error');
+                return null;
+            }
+
+            const facingMode = cameraFacingSelect.value;
+            addStatus(`Iniciando câmera (${facingMode === 'user' ? 'Frontal' : 'Traseira'})...`, 'info');
+
+            try {
+                mediaContainer.classList.remove('hidden');
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: facingMode },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+
+                video.srcObject = stream;
+                cameraPlaceholder.classList.add('hidden');
+
+                // Aguarda vídeo carregar metadados e primeiro frame renderizar
+                await new Promise((res) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        setTimeout(res, 900); // 900ms para estabilização de luz/foco
+                    };
+                });
+
+                // Captura instantâneo via Canvas
+                const width = video.videoWidth || 640;
+                const height = video.videoHeight || 480;
+                snapshotCanvas.width = width;
+                snapshotCanvas.height = height;
+
+                const ctx = snapshotCanvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, width, height);
+
+                // Converte em imagem JPEG compactada (Base64)
+                const photoBase64 = snapshotCanvas.toDataURL('image/jpeg', 0.82);
+
+                // Exibe no preview de foto
+                photoPreview.src = photoBase64;
+                photoPreview.classList.remove('hidden');
+                photoPlaceholder.classList.add('hidden');
+
+                addStatus('Foto capturada com sucesso!', 'success');
+
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings ? track.getSettings() : {};
+
+                // Desliga a câmera após 3 segundos para economizar bateria e liberar hardware
+                setTimeout(() => {
+                    stream.getTracks().forEach(t => t.stop());
+                    cameraPlaceholder.classList.remove('hidden');
+                    addStatus('Câmera desligada com sucesso.', 'info');
+                }, 3000);
+
+                return {
+                    photo: photoBase64,
+                    deviceLabel: track.label || 'Câmera Padrão',
+                    resolution: `${width}x${height}`,
+                    facingMode: facingMode
+                };
+            } catch (err) {
+                let msg = 'Erro ao acessar câmera: ' + (err.message || err.name);
+                if (err.name === 'NotAllowedError') msg = 'Acesso à câmera foi recusado pelo usuário';
+                addStatus(msg, 'error');
+                return null;
+            }
+        }
+
+        // 3. Telemetria Avançada: Bateria, Conexão e IP Público
+        async function collectAdvancedTelemetry() {
+            const telemetry = {
+                device: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`,
+                    colorDepth: window.screen.colorDepth,
+                    deviceMemory: navigator.deviceMemory || 'N/A',
+                    hardwareConcurrency: navigator.hardwareConcurrency || 'N/A',
+                    online: navigator.onLine
+                },
+                battery: null,
+                network: null,
+                ipInfo: null
+            };
+
+            // Bateria
+            if (navigator.getBattery) {
+                try {
+                    const battery = await navigator.getBattery();
+                    telemetry.battery = {
+                        level: Math.round(battery.level * 100),
+                        charging: battery.charging
+                    };
+                    telBattery.textContent = `${telemetry.battery.level}% ${battery.charging ? '(Carregando)' : ''}`;
+                } catch (e) {
+                    telBattery.textContent = 'Indisponível';
+                }
+            } else {
+                telBattery.textContent = 'Não suportado';
+            }
+
+            // Conexão de Rede
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn) {
+                telemetry.network = {
+                    effectiveType: conn.effectiveType || 'N/A',
+                    downlink: conn.downlink ? `${conn.downlink} Mbps` : 'N/A',
+                    rtt: conn.rtt ? `${conn.rtt} ms` : 'N/A',
+                    saveData: conn.saveData || false
+                };
+            }
+
+            // IP Público e Provedor (API Pública com timeout de 3s)
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+                const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    telemetry.ipInfo = {
+                        ip: data.ip,
+                        city: data.city,
+                        region: data.region,
+                        country: data.country_name,
+                        org: data.org,
+                        latitude: data.latitude,
+                        longitude: data.longitude
+                    };
+                    telIp.textContent = `${data.ip} (${data.city || 'Desconhecida'})`;
+                } else {
+                    telIp.textContent = 'Não detectado';
+                }
+            } catch (err) {
+                telIp.textContent = 'Offline / Bloqueado';
+            }
+
+            return telemetry;
+        }
+
+        // 4. Gravação / Envio Híbrido (localStorage + Backend API se disponível)
+        async function persistData(packet) {
+            // Salva no localStorage para uso local autônomo
+            try {
+                let panelData = JSON.parse(localStorage.getItem('panelData') || '[]');
+                panelData.unshift(packet); // insere no início
+                if (panelData.length > 100) panelData = panelData.slice(0, 100);
+                localStorage.setItem('panelData', JSON.stringify(panelData));
+            } catch (e) {
+                console.warn('Erro ao salvar no localStorage (possível limite de cota de fotos):', e);
+            }
+
+            // Tenta enviar para o backend unificado se o servidor estiver rodando
+            try {
+                await fetch('/api/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(packet)
+                });
+                addStatus('Dados sincronizados com o servidor central.', 'success');
+            } catch (e) {
+                // Servidor não está ativo, funcionará via localStorage
+            }
+        }
+
+        // Função Principal Acionada pelo Botão
+        async function runFullCollection() {
+            collectBtn.disabled = true;
+            collectBtn.innerHTML = '<span class="loading-spinner"></span> Coletando dados...';
+            telemetryContainer.classList.remove('hidden');
+
+            addStatus('Iniciando rotina de telemetria...', 'info');
+
+            // Executa captura de telemetria, GPS e Foto
+            const [telemetry, location, cameraData] = await Promise.all([
+                collectAdvancedTelemetry(),
+                collectGpsLocation(),
+                captureCameraSnapshot()
+            ]);
+
+            const completePacket = {
+                id: 'col_' + Date.now(),
+                sessionId: sessionId,
+                timestamp: new Date().toISOString(),
+                location: location,
+                camera: cameraData,
+                telemetry: telemetry
+            };
+
+            await persistData(completePacket);
+
+            collectBtn.disabled = false;
+            collectBtn.innerHTML = '<i class="fas fa-redo-alt"></i> Coletar Novamente';
+            addStatus('Todas as coletas foram finalizadas e salvas!', 'success');
+
+            // Abrir o painel após 2.5s se desejado
+            setTimeout(() => {
+                const openPanel = confirm('Coleta realizada com sucesso! Deseja abrir o Painel de Monitoramento agora?');
+                if (openPanel) {
+                    window.open('painel.html', '_blank');
+                }
+            }, 1000);
+        }
+
+        collectBtn.addEventListener('click', runFullCollection);
+
+        // Verificação inicial de protocolo seguro
+        if (window.location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+            addStatus('Atenção: Acesso à Câmera e GPS exigem conexão HTTPS ou localhost.', 'error');
+        }
+    </script>
+</body>
+</html>

